@@ -167,6 +167,7 @@ export default function ContactScreen() {
           value={ACADEMY_EMAIL}
           onPress={openAcademyEmail}
         />
+        <ContactCard icon="◎" label="Location" value="Durban, South Africa" />
         <ContactCard icon="◷" label="Office hours" value="Mon–Fri · 09:00–17:00" />
       </View>
 
@@ -279,6 +280,29 @@ export default function ContactScreen() {
           This prepares an email draft for you to review and send; your message is not sent
           automatically.
         </Text>
+      </View>
+
+      <View style={styles.locationSection}>
+        <Text style={styles.locationHeading}>Our location</Text>
+        <View
+          accessible
+          accessibilityLabel="Illustrative map for Durban, South Africa. Not a specific academy address."
+          style={styles.map}
+        >
+          <View style={styles.mapLand} />
+          <View style={styles.mapWater} />
+          <View style={[styles.road, styles.roadOne]} />
+          <View style={[styles.road, styles.roadTwo]} />
+          <View style={[styles.road, styles.roadThree]} />
+          <View style={[styles.road, styles.roadFour]} />
+          <View style={styles.mapMarker}>
+            <Text style={styles.mapMarkerText}>◎</Text>
+          </View>
+          <View style={styles.mapLabel}>
+            <Text style={styles.mapLabelText}>Durban, South Africa</Text>
+          </View>
+        </View>
+        <Text style={styles.mapCaption}>Illustrative map · not a specific academy address</Text>
       </View>
 
       <Text style={styles.bottomNote}>
@@ -541,6 +565,106 @@ const styles = StyleSheet.create({
     fontSize: 10,
     lineHeight: 16,
     marginTop: spacing.sm,
+  },
+  locationSection: {
+    marginBottom: spacing.lg,
+  },
+  locationHeading: {
+    color: colors.text,
+    fontSize: 21,
+    fontWeight: '800',
+    marginBottom: spacing.md,
+  },
+  map: {
+    backgroundColor: '#E6E9DD',
+    borderRadius: 18,
+    height: 230,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  mapLand: {
+    backgroundColor: '#C9DABD',
+    borderRadius: 22,
+    height: 76,
+    left: 18,
+    position: 'absolute',
+    top: 20,
+    width: 78,
+  },
+  mapWater: {
+    backgroundColor: '#B8DAD5',
+    height: '100%',
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    width: '18%',
+  },
+  road: {
+    backgroundColor: colors.surface,
+    height: 10,
+    position: 'absolute',
+    width: '150%',
+  },
+  roadOne: {
+    left: -20,
+    top: 102,
+    transform: [{ rotate: '-9deg' }],
+  },
+  roadTwo: {
+    left: -30,
+    top: 160,
+    transform: [{ rotate: '-5deg' }],
+  },
+  roadThree: {
+    height: 320,
+    left: '42%',
+    top: -40,
+    transform: [{ rotate: '-16deg' }],
+    width: 10,
+  },
+  roadFour: {
+    height: 320,
+    left: '67%',
+    top: -42,
+    transform: [{ rotate: '12deg' }],
+    width: 10,
+  },
+  mapMarker: {
+    alignItems: 'center',
+    alignSelf: 'center',
+    backgroundColor: colors.primary,
+    borderColor: colors.surface,
+    borderRadius: 21,
+    borderWidth: 2,
+    height: 42,
+    justifyContent: 'center',
+    position: 'absolute',
+    top: 92,
+    width: 42,
+  },
+  mapMarkerText: {
+    color: colors.white,
+    fontSize: 23,
+    lineHeight: 27,
+  },
+  mapLabel: {
+    backgroundColor: colors.surface,
+    borderRadius: 14,
+    bottom: 14,
+    left: 14,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    position: 'absolute',
+  },
+  mapLabelText: {
+    color: colors.primary,
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  mapCaption: {
+    color: colors.muted,
+    fontSize: 9,
+    marginTop: spacing.xs,
   },
   bottomNote: {
     color: colors.muted,

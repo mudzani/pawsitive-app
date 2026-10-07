@@ -1,18 +1,27 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { courses, getDiscountRate, VAT_RATE, formatRand } from '../data/courses';
+import BackBar from '../components/BackBar';
+import { courses, getDiscountRate, VAT_RATE } from '../data/courses';
 import { colors, spacing, typography } from '../theme/colors';
 
 const discountTiers = [
-  { count: '1 course', rate: 0 },
-  { count: '2 courses', rate: 5 },
-  { count: '3 courses', rate: 10 },
-  { count: '4+ courses', rate: 15 },
+  { label: '1 course', rate: 0 },
+  { label: '2 courses', rate: 5 },
+  { label: '3 courses', rate: 10 },
+  { label: 'More than 3 courses', rate: 15 },
 ];
 
 function roundMoney(amount: number): number {
   return Math.round((amount + Number.EPSILON) * 100) / 100;
+}
+
+function formatCourseFee(amount: number): string {
+  return `R${amount}`;
+}
+
+function formatMoney(amount: number): string {
+  return `R${amount.toFixed(2)}`;
 }
 
 export default function CalculateFeesScreen() {
@@ -22,22 +31,30 @@ export default function CalculateFeesScreen() {
 
 function FeeCalculator({ initialCourseId }: { initialCourseId?: string }) {
   const router = useRouter();
-  const [selectedCourseIds, setSelectedCourseIds] = useState<string[]>(() =>
+  const initialSelection =
     initialCourseId && courses.some((course) => course.id === initialCourseId)
       ? [initialCourseId]
-      : [],
-  );
+      : [];
+  const [selectedCourseIds, setSelectedCourseIds] = useState<string[]>(initialSelection);
+  const [calculatedCourseIds, setCalculatedCourseIds] = useState<string[]>(initialSelection);
 
   const selectedCourses = useMemo(
     () => courses.filter((course) => selectedCourseIds.includes(course.id)),
     [selectedCourseIds],
   );
-  const subtotal = selectedCourses.reduce((total, course) => total + course.fee, 0);
-  const discountRate = getDiscountRate(selectedCourses.length);
+  const calculatedCourses = useMemo(
+    () => courses.filter((course) => calculatedCourseIds.includes(course.id)),
+    [calculatedCourseIds],
+  );
+  const subtotal = calculatedCourses.reduce((total, course) => total + course.fee, 0);
+  const discountRate = getDiscountRate(calculatedCourses.length);
   const discount = roundMoney(subtotal * discountRate);
   const discountedSubtotal = roundMoney(subtotal - discount);
   const vat = roundMoney(discountedSubtotal * VAT_RATE);
   const total = roundMoney(discountedSubtotal + vat);
+  const professionalCourses = calculatedCourses.filter(
+    (course) => course.type === 'Professional Development Programme',
+  );
 
   function toggleCourse(courseIdToToggle: string) {
     setSelectedCourseIds((current) =>
@@ -49,6 +66,7 @@ function FeeCalculator({ initialCourseId }: { initialCourseId?: string }) {
 
   function resetSelection() {
     setSelectedCourseIds([]);
+    setCalculatedCourseIds([]);
   }
 
   return (
@@ -57,31 +75,30 @@ function FeeCalculator({ initialCourseId }: { initialCourseId?: string }) {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={styles.eyebrow}>PLAN YOUR STUDY</Text>
-      <Text style={styles.heading}>Calculate your fees</Text>
+      <BackBar title="Calculate Fees" />
+
+      <Text style={styles.eyebrow}>PLAN YOUR LEARNING</Text>
+      <Text style={styles.heading}>Calculate Fees</Text>
       <Text style={styles.intro}>
-        Select one or more courses to see an estimate. Your selection is not submitted or saved.
+        Choose your courses. See your savings and total, including VAT.
       </Text>
 
-      <View style={styles.infoBanner}>
-        <View style={styles.infoIcon}>
-          <Text style={styles.infoIconText}>R</Text>
-        </View>
-        <Text style={styles.infoText}>
-          Course prices are shown before VAT. Any course discount is applied before 15% VAT.
-        </Text>
-      </View>
-
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionHeading}>Choose your courses</Text>
-        <Text style={styles.selectedCount}>
-          {selectedCourses.length} selected
-        </Text>
+        <Text style={styles.sectionHeading}>Select your courses</Text>
+        <View style={styles.selectedPill}>
+          <Text style={styles.selectedCount}>{selectedCourses.length} selected</Text>
+        </View>
       </View>
+      <Text style={styles.sectionIntro}>
+        Choose any combination of professional and short courses.
+      </Text>
 
       <View style={styles.courseList}>
         {courses.map((course) => {
           const selected = selectedCourseIds.includes(course.id);
+          const courseType =
+            course.type === 'Professional Development Programme' ? 'Professional' : 'Short course';
+
           return (
             <Pressable
               key={course.id}
@@ -95,28 +112,35 @@ function FeeCalculator({ initialCourseId }: { initialCourseId?: string }) {
               </View>
               <View style={styles.courseCopy}>
                 <Text style={styles.courseName}>{course.name}</Text>
-                <Text style={styles.courseMeta}>{course.durationWeeks} weeks</Text>
+                <Text style={styles.courseMeta}>
+                  {courseType} · {course.durationWeeks} weeks
+                </Text>
               </View>
-              <Text style={styles.courseFee}>{formatRand(course.fee)}</Text>
+              <Text style={styles.courseFee}>{formatCourseFee(course.fee)}</Text>
             </Pressable>
           );
         })}
       </View>
 
-      <View style={styles.discountGuide}>
-        <Text style={styles.discountTitle}>Bundle savings</Text>
-        <Text style={styles.discountIntro}>Your discount depends on the number of courses selected.</Text>
-        <View style={styles.tierGrid}>
+      <Text style={styles.disclaimer}>
+        Listed course fees exclude VAT. Discounts apply before VAT is added.
+      </Text>
+
+      <View style={styles.discountSection}>
+        <Text style={styles.discountTitle}>A little more learning, a little more savings.</Text>
+        <View style={styles.discountTable}>
           {discountTiers.map((tier) => {
-            const selectedTier = Math.round(discountRate * 100) === tier.rate && selectedCourses.length > 0;
+            const isCurrentTier =
+              selectedCourses.length > 0 &&
+              Math.round(getDiscountRate(selectedCourses.length) * 100) === tier.rate;
+
             return (
-              <View key={tier.count} style={[styles.tier, selectedTier && styles.selectedTier]}>
-                <Text style={[styles.tierRate, selectedTier && styles.selectedTierText]}>
-                  {tier.rate}%
-                </Text>
-                <Text style={[styles.tierCount, selectedTier && styles.selectedTierText]}>
-                  {tier.count}
-                </Text>
+              <View
+                key={tier.label}
+                style={[styles.discountRow, isCurrentTier && styles.currentDiscountRow]}
+              >
+                <Text style={styles.discountLabel}>{tier.label}</Text>
+                <Text style={styles.discountRate}>{tier.rate}% discount</Text>
               </View>
             );
           })}
@@ -124,14 +148,10 @@ function FeeCalculator({ initialCourseId }: { initialCourseId?: string }) {
       </View>
 
       <View style={styles.summary}>
+        <Text style={styles.summaryEyebrow}>YOUR LEARNING PLAN</Text>
         <View style={styles.summaryHeader}>
-          <View style={styles.summaryHeadingCopy}>
-            <Text style={styles.summaryHeading}>Your estimate</Text>
-            <Text style={styles.summaryCount}>
-              {selectedCourses.length} {selectedCourses.length === 1 ? 'course' : 'courses'} selected
-            </Text>
-          </View>
-          {selectedCourses.length > 0 ? (
+          <Text style={styles.summaryHeading}>Fee summary</Text>
+          {calculatedCourses.length > 0 ? (
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Clear selected courses"
@@ -143,59 +163,74 @@ function FeeCalculator({ initialCourseId }: { initialCourseId?: string }) {
           ) : null}
         </View>
 
-        {selectedCourses.length === 0 ? (
+        {calculatedCourses.length === 0 ? (
           <Text style={styles.emptyMessage}>
-            Choose courses above to see the subtotal, any discount and the VAT-inclusive estimate.
+            Choose your courses above, then tap Calculate to see your fee summary.
           </Text>
         ) : (
           <>
+            <Text style={styles.summaryCount}>
+              {professionalCourses.length > 0
+                ? `${professionalCourses.length} professional ${professionalCourses.length === 1 ? 'course' : 'courses'}`
+                : `${calculatedCourses.length} short ${calculatedCourses.length === 1 ? 'course' : 'courses'}`}
+            </Text>
             <View style={styles.selectedCourseList}>
-              {selectedCourses.map((course) => (
-                <View key={course.id} style={styles.selectedCourseRow}>
-                  <Text style={styles.selectedCourseName}>{course.name}</Text>
-                  <Text style={styles.selectedCourseFee}>{formatRand(course.fee)}</Text>
-                </View>
+              {calculatedCourses.map((course) => (
+                <Text key={course.id} style={styles.selectedCourseName}>
+                  {course.name}
+                </Text>
               ))}
             </View>
+
             {discount > 0 ? (
               <View style={styles.savingsBanner}>
+                <Text style={styles.savingsIcon}>✣</Text>
                 <Text style={styles.savingsText}>
-                  You save {formatRand(discount)} with your {Math.round(discountRate * 100)}% bundle
-                  discount.
+                  You save {formatMoney(discount)} with this bundle.
                 </Text>
               </View>
             ) : null}
-            <SummaryRow label="Subtotal" value={formatRand(subtotal)} />
+
+            <SummaryRow label="Subtotal" value={formatMoney(subtotal)} />
             <SummaryRow
-              label={`Bundle discount (${Math.round(discountRate * 100)}%)`}
-              value={`−${formatRand(discount)}`}
+              label={`Discount (${Math.round(discountRate * 100)}%)`}
+              value={`−${formatMoney(discount)}`}
+              highlight
             />
-            <SummaryRow label="After discount" value={formatRand(discountedSubtotal)} />
-            <SummaryRow label={`VAT (${Math.round(VAT_RATE * 100)}%)`} value={formatRand(vat)} />
+            <SummaryRow label="After discount" value={formatMoney(discountedSubtotal)} />
+            <SummaryRow label={`${Math.round(VAT_RATE * 100)}% VAT`} value={formatMoney(vat)} />
             <View style={styles.totalDivider} />
-            <SummaryRow label="Estimated total" value={formatRand(total)} strong />
+            <Text style={styles.totalLabel}>Total including VAT</Text>
+            <Text style={styles.totalAmount}>{formatMoney(total)}</Text>
+            <Text style={styles.vatNote}>
+              VAT is {Math.round(VAT_RATE * 100)}% of {formatMoney(discountedSubtotal)}, the amount
+              after your course-count discount.
+            </Text>
           </>
         )}
+
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setCalculatedCourseIds([...selectedCourseIds])}
+          style={({ pressed }) => [styles.calculateButton, pressed && styles.pressed]}
+        >
+          <Text style={styles.calculateButtonText}>Calculate</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ disabled: calculatedCourses.length === 0 }}
+          disabled={calculatedCourses.length === 0}
+          onPress={() => router.navigate('/contact')}
+          style={({ pressed }) => [
+            styles.enrolButton,
+            calculatedCourses.length === 0 && styles.disabledButton,
+            pressed && calculatedCourses.length > 0 && styles.pressed,
+          ]}
+        >
+          <Text style={styles.enrolButtonText}>Continue to enrol</Text>
+          <Text style={styles.enrolButtonArrow}>→</Text>
+        </Pressable>
       </View>
-
-      <Text style={styles.disclaimer}>
-        This is an estimate only. Discounts are based on the number of selected courses; confirm
-        final fees with the academy.
-      </Text>
-
-      <Pressable
-        accessibilityRole="button"
-        accessibilityState={{ disabled: selectedCourses.length === 0 }}
-        disabled={selectedCourses.length === 0}
-        onPress={() => router.navigate('/contact')}
-        style={({ pressed }) => [
-          styles.continueButton,
-          selectedCourses.length === 0 && styles.disabledButton,
-          pressed && selectedCourses.length > 0 && styles.pressedButton,
-        ]}
-      >
-        <Text style={styles.continueText}>Continue to contact the academy</Text>
-      </Pressable>
     </ScrollView>
   );
 }
@@ -203,16 +238,16 @@ function FeeCalculator({ initialCourseId }: { initialCourseId?: string }) {
 function SummaryRow({
   label,
   value,
-  strong = false,
+  highlight = false,
 }: {
   label: string;
   value: string;
-  strong?: boolean;
+  highlight?: boolean;
 }) {
   return (
     <View style={styles.summaryRow}>
-      <Text style={[styles.summaryLabel, strong && styles.strongText]}>{label}</Text>
-      <Text style={[styles.summaryValue, strong && styles.strongText]}>{value}</Text>
+      <Text style={styles.summaryLabel}>{label}</Text>
+      <Text style={[styles.summaryValue, highlight && styles.highlightValue]}>{value}</Text>
     </View>
   );
 }
@@ -230,93 +265,85 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   eyebrow: {
-    color: colors.accent,
-    fontSize: 11,
+    color: colors.primary,
+    fontSize: 10,
     fontWeight: '800',
-    letterSpacing: 1.6,
-    marginBottom: spacing.xs,
+    marginBottom: spacing.sm,
   },
   heading: {
-    ...typography.heading,
+    color: colors.text,
     fontSize: 28,
+    fontWeight: '800',
+    letterSpacing: -0.4,
     lineHeight: 35,
   },
   intro: {
     ...typography.body,
     color: colors.muted,
-    lineHeight: 22,
-    marginBottom: spacing.md,
-    marginTop: spacing.xs,
-  },
-  infoBanner: {
-    alignItems: 'center',
-    backgroundColor: '#E8F1ED',
-    borderRadius: 12,
-    flexDirection: 'row',
-    marginBottom: spacing.lg,
-    padding: spacing.md,
-  },
-  infoIcon: {
-    alignItems: 'center',
-    backgroundColor: colors.primary,
-    borderRadius: 16,
-    height: 32,
-    justifyContent: 'center',
-    marginRight: spacing.sm,
-    width: 32,
-  },
-  infoIconText: {
-    color: colors.white,
     fontSize: 14,
-    fontWeight: '800',
-  },
-  infoText: {
-    color: colors.primary,
-    flex: 1,
-    fontSize: 13,
-    lineHeight: 19,
+    lineHeight: 22,
+    marginBottom: spacing.lg,
+    marginTop: spacing.sm,
   },
   sectionHeader: {
     alignItems: 'center',
     flexDirection: 'row',
+    gap: spacing.sm,
     justifyContent: 'space-between',
-    marginBottom: spacing.sm,
   },
   sectionHeading: {
-    ...typography.heading,
+    color: colors.text,
+    flex: 1,
     fontSize: 20,
+    fontWeight: '800',
+    lineHeight: 27,
+  },
+  selectedPill: {
+    backgroundColor: '#E6F1EB',
+    borderRadius: 16,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
   },
   selectedCount: {
+    color: colors.primary,
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  sectionIntro: {
     color: colors.muted,
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 11,
+    lineHeight: 18,
+    marginBottom: spacing.md,
+    marginTop: spacing.sm,
   },
   courseList: {
     gap: spacing.sm,
   },
   courseOption: {
     alignItems: 'center',
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
     borderColor: colors.border,
     borderRadius: 12,
     borderWidth: 1,
     flexDirection: 'row',
     minHeight: 72,
-    padding: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
   },
   selectedCourseOption: {
+    backgroundColor: '#E6F1EB',
     borderColor: colors.primary,
-    borderWidth: 2,
   },
   checkbox: {
     alignItems: 'center',
-    borderColor: colors.muted,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
     borderRadius: 6,
     borderWidth: 1.5,
-    height: 24,
+    height: 22,
     justifyContent: 'center',
     marginRight: spacing.sm,
-    width: 24,
+    width: 22,
   },
   checkedBox: {
     backgroundColor: colors.primary,
@@ -324,7 +351,7 @@ const styles = StyleSheet.create({
   },
   checkmark: {
     color: colors.white,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
   },
   courseCopy: {
@@ -332,77 +359,79 @@ const styles = StyleSheet.create({
     paddingRight: spacing.xs,
   },
   courseName: {
-    ...typography.subheading,
-    fontSize: 14,
-    lineHeight: 19,
+    color: colors.text,
+    fontSize: 11,
+    fontWeight: '700',
+    lineHeight: 16,
   },
   courseMeta: {
     color: colors.muted,
-    fontSize: 12,
+    fontSize: 9,
+    lineHeight: 14,
     marginTop: 2,
   },
   courseFee: {
-    ...typography.price,
-    fontSize: 14,
-  },
-  discountGuide: {
-    backgroundColor: colors.white,
-    borderColor: colors.border,
-    borderRadius: 14,
-    borderWidth: 1,
-    marginTop: spacing.lg,
-    padding: spacing.md,
-  },
-  discountTitle: {
     color: colors.primary,
-    fontSize: 17,
+    fontSize: 11,
     fontWeight: '800',
   },
-  discountIntro: {
-    ...typography.body,
-    color: colors.muted,
-    lineHeight: 20,
-    marginTop: spacing.xs,
-  },
-  tierGrid: {
-    flexDirection: 'row',
-    gap: spacing.xs,
-    marginTop: spacing.md,
-  },
-  tier: {
-    alignItems: 'center',
-    backgroundColor: colors.background,
-    borderRadius: 10,
-    flex: 1,
-    justifyContent: 'center',
-    minHeight: 60,
-    paddingHorizontal: 2,
-    paddingVertical: spacing.xs,
-  },
-  selectedTier: {
-    backgroundColor: colors.primary,
-  },
-  tierRate: {
-    color: colors.primary,
-    fontSize: 17,
-    fontWeight: '800',
-  },
-  tierCount: {
+  disclaimer: {
     color: colors.muted,
     fontSize: 9,
-    marginTop: 2,
-    textAlign: 'center',
+    lineHeight: 15,
+    marginTop: spacing.sm,
   },
-  selectedTierText: {
-    color: colors.white,
+  discountSection: {
+    marginTop: spacing.lg,
+  },
+  discountTitle: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: '800',
+    lineHeight: 24,
+    marginBottom: spacing.md,
+  },
+  discountTable: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 12,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  discountRow: {
+    alignItems: 'center',
+    borderBottomColor: colors.border,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    minHeight: 38,
+    paddingHorizontal: spacing.sm,
+  },
+  currentDiscountRow: {
+    backgroundColor: '#FCE9C7',
+  },
+  discountLabel: {
+    color: colors.text,
+    fontSize: 10,
+  },
+  discountRate: {
+    color: colors.primary,
+    fontSize: 10,
+    fontWeight: '700',
   },
   summary: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
     borderColor: colors.border,
-    borderRadius: 16,
+    borderRadius: 20,
     borderWidth: 1,
     marginTop: spacing.lg,
     padding: spacing.md,
+  },
+  summaryEyebrow: {
+    color: colors.primary,
+    fontSize: 10,
+    fontWeight: '800',
+    marginBottom: spacing.lg,
   },
   summaryHeader: {
     alignItems: 'center',
@@ -410,65 +439,64 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: spacing.md,
   },
-  summaryHeadingCopy: {
-    flex: 1,
-  },
   summaryHeading: {
-    ...typography.heading,
-    fontSize: 20,
-  },
-  summaryCount: {
-    color: colors.muted,
-    fontSize: 12,
-    marginTop: 2,
+    color: colors.text,
+    flex: 1,
+    fontSize: 23,
+    fontWeight: '800',
+    letterSpacing: -0.3,
   },
   resetButton: {
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 44,
-    minWidth: 54,
+    minHeight: 40,
+    minWidth: 48,
   },
   resetText: {
     color: colors.primary,
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '700',
   },
   emptyMessage: {
     ...typography.body,
     color: colors.muted,
     lineHeight: 21,
-  },
-  selectedCourseList: {
-    borderBottomColor: colors.border,
-    borderBottomWidth: 1,
     marginBottom: spacing.md,
-    paddingBottom: spacing.sm,
   },
-  selectedCourseRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  summaryCount: {
+    color: colors.primary,
+    fontSize: 11,
+    fontWeight: '700',
     marginBottom: spacing.xs,
   },
-  selectedCourseName: {
-    ...typography.body,
-    flex: 1,
-    paddingRight: spacing.sm,
+  selectedCourseList: {
+    marginBottom: spacing.md,
   },
-  selectedCourseFee: {
-    ...typography.body,
-    fontWeight: '600',
+  selectedCourseName: {
+    color: colors.muted,
+    fontSize: 10,
+    lineHeight: 18,
   },
   savingsBanner: {
-    backgroundColor: '#E8F1ED',
-    borderRadius: 8,
+    alignItems: 'center',
+    backgroundColor: '#FCE9C7',
+    borderRadius: 10,
+    flexDirection: 'row',
+    gap: spacing.sm,
     marginBottom: spacing.md,
     padding: spacing.sm,
   },
+  savingsIcon: {
+    color: colors.primary,
+    fontSize: 16,
+    fontWeight: '700',
+  },
   savingsText: {
     color: colors.primary,
-    fontSize: 13,
+    flex: 1,
+    fontSize: 10,
     fontWeight: '700',
-    lineHeight: 19,
+    lineHeight: 16,
   },
   summaryRow: {
     alignItems: 'center',
@@ -477,13 +505,18 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   summaryLabel: {
-    ...typography.body,
+    color: colors.muted,
     flex: 1,
+    fontSize: 10,
     paddingRight: spacing.sm,
   },
   summaryValue: {
-    ...typography.body,
-    fontWeight: '600',
+    color: colors.text,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  highlightValue: {
+    color: colors.primary,
   },
   totalDivider: {
     backgroundColor: colors.border,
@@ -491,38 +524,63 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
     marginTop: spacing.xs,
   },
-  strongText: {
-    color: colors.primary,
-    fontSize: 16,
-    fontWeight: '800',
+  totalLabel: {
+    color: colors.text,
+    fontSize: 11,
+    fontWeight: '700',
   },
-  disclaimer: {
-    ...typography.body,
+  totalAmount: {
+    color: colors.primary,
+    fontSize: 34,
+    fontWeight: '800',
+    letterSpacing: -0.6,
+    lineHeight: 42,
+    marginTop: spacing.xs,
+  },
+  vatNote: {
     color: colors.muted,
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 9,
+    lineHeight: 15,
     marginTop: spacing.md,
   },
-  continueButton: {
+  calculateButton: {
     alignItems: 'center',
-    backgroundColor: colors.primary,
-    borderRadius: 10,
+    backgroundColor: colors.surface,
+    borderColor: colors.primary,
+    borderRadius: 11,
+    borderWidth: 1,
     justifyContent: 'center',
     marginTop: spacing.md,
-    minHeight: 50,
-    paddingHorizontal: spacing.md,
+    minHeight: 46,
+  },
+  calculateButtonText: {
+    color: colors.primary,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  enrolButton: {
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: 11,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: spacing.sm,
+    minHeight: 46,
+  },
+  enrolButtonText: {
+    color: colors.white,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  enrolButtonArrow: {
+    color: colors.white,
+    fontSize: 17,
+    marginLeft: spacing.sm,
   },
   disabledButton: {
-    backgroundColor: colors.muted,
-    opacity: 0.55,
+    opacity: 0.5,
   },
-  pressedButton: {
-    opacity: 0.82,
-  },
-  continueText: {
-    color: colors.white,
-    fontSize: 14,
-    fontWeight: '700',
-    textAlign: 'center',
+  pressed: {
+    opacity: 0.8,
   },
 });
