@@ -19,8 +19,9 @@ export default function HomeScreen() {
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.welcome}>
-        <Text style={styles.eyebrow}>CARE · UNDERSTAND · GROW</Text>
-        <Text style={styles.heading}>A brighter future for pets starts here.</Text>
+        <Text style={styles.eyebrow}>For the people who love pets</Text>
+        <Text style={styles.heading}>Learn. Grow.
+Care.</Text>
         <Text style={styles.intro}>
           Learn practical skills and build a deeper understanding of the animals you love.
         </Text>
