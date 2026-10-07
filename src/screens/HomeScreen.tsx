@@ -23,7 +23,7 @@ export default function HomeScreen() {
         <Text style={styles.heading}>Learn. Grow.
 Care.</Text>
         <Text style={styles.intro}>
-          Learn practical skills and build a deeper understanding of the animals you love.
+      Turn your love for animals into everyday confidence. Practical learning for pet owners and aspiring professionals..
         </Text>
       </View>
 
