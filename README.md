@@ -13,8 +13,18 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
 2. Start the app
 
    ```bash
-   npx expo start
+   npm start
    ```
+
+`npm start` launches Expo Go over the local network. To run on Android or iOS, install Expo Go on your phone, connect your phone and computer to the same Wi-Fi network, and scan the QR code in the terminal. Press `w` in the Expo terminal to open the web app.
+
+For web only, run:
+
+```bash
+npm run start:web
+```
+
+`npm run web` also starts web only. If Expo Go cannot connect, check that both devices are on the same network and that the computer firewall permits the development server.
 
 In the output, you'll find options to open the app in a
 
