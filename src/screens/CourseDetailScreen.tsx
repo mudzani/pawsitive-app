@@ -21,6 +21,8 @@ export default function CourseDetailScreen() {
     );
   }
 
+  const courseType = course.type === 'Short Course' ? 'Short course' : 'Professional';
+
   return (
     <ScrollView
       style={styles.screen}
@@ -29,49 +31,31 @@ export default function CourseDetailScreen() {
     >
       <BackBar title="Course details" />
 
-      <View style={styles.heroCard}>
-        <Image
-          source={course.image}
-          contentFit="cover"
-          style={styles.heroImage}
-          accessibilityLabel={`${course.name} course`}
-        />
-        <View style={styles.heroCopy}>
-          <Text style={styles.courseType}>
-            {course.type === 'Short Course' ? 'SHORT COURSE' : 'PROFESSIONAL PROGRAMME'}
-          </Text>
-          <Text style={styles.courseTitle}>{course.name}</Text>
-          <View style={styles.facts}>
-            <View style={styles.fact}>
-              <Text style={styles.factValue}>{course.durationWeeks}</Text>
-              <Text style={styles.factLabel}>weeks</Text>
-            </View>
-            <View style={styles.factDivider} />
-            <View style={styles.fact}>
-              <Text style={styles.factValue}>{formatRand(course.fee)}</Text>
-              <Text style={styles.factLabel}>course fee</Text>
-            </View>
-          </View>
-          <Text style={styles.feeNote}>Per course, before VAT</Text>
-        </View>
+      <Image
+        source={course.image}
+        contentFit="cover"
+        style={styles.heroImage}
+        accessibilityLabel={`${course.name} course`}
+      />
+
+      <View style={styles.courseIntro}>
+        <Text style={styles.courseBadge}>
+          {courseType} · {course.durationWeeks} weeks
+        </Text>
+        <Text style={styles.courseTitle}>{course.name}</Text>
+        <Text style={styles.summary}>{course.summary}</Text>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionHeading}>About this course</Text>
+        <Text style={styles.sectionHeading}>Course overview</Text>
         <Text style={styles.body}>{course.overview}</Text>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionHeading}>What you will learn</Text>
-        <View style={styles.learningCard}>
-          {course.whatYouWillLearn.map((item, index) => (
-            <View
-              key={item}
-              style={[
-                styles.learningItem,
-                index === course.whatYouWillLearn.length - 1 && styles.lastLearningItem,
-              ]}
-            >
+        <Text style={styles.sectionHeading}>What you’ll learn</Text>
+        <View style={styles.learningList}>
+          {course.whatYouWillLearn.map((item) => (
+            <View key={item} style={styles.learningItem}>
               <View style={styles.checkCircle}>
                 <Text style={styles.checkMark}>✓</Text>
               </View>
@@ -81,35 +65,56 @@ export default function CourseDetailScreen() {
         </View>
       </View>
 
-      <View style={styles.requirementCard}>
+      <View style={styles.requirementNote}>
         <Text style={styles.requirementLabel}>ENTRY REQUIREMENTS</Text>
         <Text style={styles.requirementText}>{course.requirements}</Text>
       </View>
 
-      <View style={styles.enrolCard}>
-        <Text style={styles.enrolTitle}>Your next step</Text>
-        <Text style={styles.enrolText}>
-          Add this course to a fee estimate or browse other learning options.
-        </Text>
-        <AppButton
-          label="Calculate course fees"
+      <View style={styles.nextStep}>
+        <Text style={styles.eyebrow}>YOUR NEXT STEP</Text>
+        <Text style={styles.price}>{formatRand(course.fee)}</Text>
+        <Text style={styles.feeNote}>Course fee before discounts and 15% VAT</Text>
+
+        <View style={styles.facts}>
+          <CourseFact label="DURATION" value={`${course.durationWeeks} weeks`} />
+          <CourseFact label="COURSE TYPE" value={courseType} />
+          <CourseFact label="LEARNING" value="Online, with practical activities" />
+        </View>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Enrol in ${course.name}`}
+          onPress={() => router.navigate('/contact')}
+          style={({ pressed }) => [styles.enrolButton, pressed && styles.pressed]}
+        >
+          <Text style={styles.enrolButtonText}>Enrol now</Text>
+          <Text style={styles.enrolArrow}>→</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Taking more courses? Calculate fees"
           onPress={() =>
             router.push({
               pathname: '/fees',
               params: { courseId: course.id },
             })
           }
-          style={styles.enrolButton}
-        />
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => router.navigate('/courses')}
-          style={styles.browseButton}
+          style={styles.feeLink}
         >
-          <Text style={styles.browseText}>Browse all courses</Text>
+          <Text style={styles.feeLinkIcon}>⊕</Text>
+          <Text style={styles.feeLinkText}>Taking more courses? Calculate Fees</Text>
         </Pressable>
       </View>
     </ScrollView>
+  );
+}
+
+function CourseFact({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.fact}>
+      <Text style={styles.factLabel}>{label}</Text>
+      <Text style={styles.factValue}>{value}</Text>
+    </View>
   );
 }
 
@@ -121,109 +126,78 @@ const styles = StyleSheet.create({
   content: {
     alignSelf: 'center',
     maxWidth: 720,
-    padding: spacing.md,
+    padding: spacing.lg,
     paddingBottom: spacing.xl,
     width: '100%',
   },
-  heroCard: {
-    backgroundColor: colors.white,
-    borderColor: colors.border,
-    borderRadius: 18,
-    borderWidth: 1,
-    marginBottom: spacing.lg,
-    overflow: 'hidden',
-  },
   heroImage: {
+    aspectRatio: 1.57,
     backgroundColor: colors.border,
-    height: 220,
+    borderRadius: 18,
+    marginBottom: spacing.lg,
     width: '100%',
   },
-  heroCopy: {
-    padding: spacing.md,
+  courseIntro: {
+    marginBottom: spacing.lg,
   },
-  courseType: {
-    color: colors.accent,
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 1.2,
-    marginBottom: spacing.xs,
+  courseBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#E6F1EB',
+    borderRadius: 18,
+    color: colors.primary,
+    fontSize: 11,
+    fontWeight: '700',
+    marginBottom: spacing.sm,
+    overflow: 'hidden',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
   },
   courseTitle: {
-    color: colors.primary,
-    fontSize: 25,
-    fontWeight: '800',
-    lineHeight: 31,
-    marginBottom: spacing.md,
-  },
-  facts: {
-    alignItems: 'center',
-    flexDirection: 'row',
-  },
-  fact: {
-    alignItems: 'flex-start',
-    minWidth: 92,
-  },
-  factValue: {
     color: colors.text,
-    fontSize: 17,
+    fontSize: 34,
     fontWeight: '800',
+    letterSpacing: -0.8,
+    lineHeight: 41,
+    marginBottom: spacing.sm,
   },
-  factLabel: {
+  summary: {
     color: colors.muted,
-    fontSize: 12,
-    marginTop: 2,
-  },
-  factDivider: {
-    backgroundColor: colors.border,
-    height: 36,
-    marginHorizontal: spacing.md,
-    width: 1,
-  },
-  feeNote: {
-    color: colors.muted,
-    fontSize: 11,
-    marginTop: spacing.sm,
+    fontSize: 15,
+    lineHeight: 23,
   },
   section: {
     marginBottom: spacing.lg,
   },
   sectionHeading: {
-    ...typography.heading,
-    fontSize: 20,
+    color: colors.text,
+    fontSize: 25,
+    fontWeight: '700',
+    letterSpacing: -0.3,
+    lineHeight: 32,
     marginBottom: spacing.sm,
   },
   body: {
     ...typography.body,
     color: colors.muted,
+    fontSize: 14,
     lineHeight: 22,
   },
-  learningCard: {
-    backgroundColor: colors.white,
-    borderColor: colors.border,
-    borderRadius: 14,
-    borderWidth: 1,
-    padding: spacing.md,
+  learningList: {
+    gap: spacing.md,
+    paddingTop: spacing.xs,
   },
   learningItem: {
     alignItems: 'flex-start',
-    borderBottomColor: colors.border,
-    borderBottomWidth: 1,
     flexDirection: 'row',
-    marginBottom: spacing.md,
-    paddingBottom: spacing.md,
-  },
-  lastLearningItem: {
-    borderBottomWidth: 0,
-    marginBottom: 0,
-    paddingBottom: 0,
+    gap: spacing.sm,
   },
   checkCircle: {
     alignItems: 'center',
-    backgroundColor: '#E8F1ED',
+    backgroundColor: '#E6F1EB',
     borderRadius: 11,
     height: 22,
     justifyContent: 'center',
-    marginRight: spacing.sm,
+    marginTop: 1,
     width: 22,
   },
   checkMark: {
@@ -236,55 +210,104 @@ const styles = StyleSheet.create({
     flex: 1,
     lineHeight: 21,
   },
-  requirementCard: {
-    backgroundColor: colors.white,
-    borderColor: colors.border,
-    borderRadius: 14,
-    borderWidth: 1,
+  requirementNote: {
     marginBottom: spacing.lg,
-    padding: spacing.md,
   },
   requirementLabel: {
-    color: colors.accent,
+    color: colors.primary,
     fontSize: 10,
     fontWeight: '800',
-    letterSpacing: 1.2,
+    letterSpacing: 0.8,
     marginBottom: spacing.xs,
   },
   requirementText: {
     ...typography.body,
+    color: colors.muted,
     lineHeight: 21,
   },
-  enrolCard: {
-    backgroundColor: colors.primary,
-    borderRadius: 16,
+  nextStep: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginTop: spacing.xs,
     padding: spacing.md,
   },
-  enrolTitle: {
-    color: colors.white,
-    fontSize: 20,
+  eyebrow: {
+    color: colors.primary,
+    fontSize: 11,
     fontWeight: '800',
-    marginBottom: spacing.xs,
+    marginBottom: spacing.lg,
   },
-  enrolText: {
-    color: colors.white,
-    fontSize: 14,
-    lineHeight: 21,
-    marginBottom: spacing.md,
-    opacity: 0.9,
+  price: {
+    color: colors.primary,
+    fontSize: 40,
+    fontWeight: '800',
+    letterSpacing: -1.2,
+    lineHeight: 46,
+  },
+  feeNote: {
+    color: colors.muted,
+    fontSize: 12,
+    marginTop: spacing.xs,
+  },
+  facts: {
+    gap: spacing.md,
+    marginTop: spacing.lg,
+  },
+  fact: {
+    gap: 3,
+  },
+  factLabel: {
+    color: colors.muted,
+    fontSize: 10,
+    fontWeight: '500',
+  },
+  factValue: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 19,
   },
   enrolButton: {
-    backgroundColor: colors.accent,
-  },
-  browseButton: {
     alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    flexDirection: 'row',
+    gap: spacing.sm,
     justifyContent: 'center',
-    marginTop: spacing.xs,
-    minHeight: 44,
+    marginTop: spacing.lg,
+    minHeight: 50,
   },
-  browseText: {
+  enrolButtonText: {
     color: colors.white,
     fontSize: 13,
+    fontWeight: '700',
+  },
+  enrolArrow: {
+    color: colors.white,
+    fontSize: 18,
+    lineHeight: 20,
+  },
+  pressed: {
+    opacity: 0.8,
+  },
+  feeLink: {
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+    minHeight: 40,
+  },
+  feeLinkIcon: {
+    color: colors.primary,
+    fontSize: 19,
+    fontWeight: '700',
+  },
+  feeLinkText: {
+    color: colors.primary,
+    fontSize: 12,
     fontWeight: '700',
   },
   notFound: {

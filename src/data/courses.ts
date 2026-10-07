@@ -12,6 +12,7 @@ export type Course = {
   durationWeeks: number;
   fee: number; // in Rand
   image: ImageSourcePropType;
+  summary: string;
   overview: string;
   whatYouWillLearn: string[];
   requirements: string;
@@ -25,6 +26,7 @@ export const courses: Course[] = [
     durationWeeks: 12,
     fee: 1500,
     image: require('../../assets/images/course-obedience.jpg'),
+    summary: 'Build confidence with reward-based training, clear cues and practical dog-handling skills.',
     overview:
       'A professional development programme covering dog body language, communication cues, reward-based motivation structures, and obedience protocols.',
     whatYouWillLearn: [
@@ -43,6 +45,7 @@ export const courses: Course[] = [
     durationWeeks: 12,
     fee: 1500,
     image: require('../../assets/images/course-grooming.jpg'),
+    summary: 'Thoughtful coat care, gentle handling and everyday hygiene.',
     overview:
       'Professional techniques for hygiene, skin care, styling and safe handling of pets during grooming.',
     whatYouWillLearn: [
@@ -61,6 +64,7 @@ export const courses: Course[] = [
     durationWeeks: 12,
     fee: 1500,
     image: require('../../assets/images/course-behaviour.jpg'),
+    summary: 'Understand the behaviour, needs and emotional cues of the animals in your care.',
     overview:
       'Understanding domestic pet psychology, cognitive responses, and environmental stress factors.',
     whatYouWillLearn: [
@@ -79,6 +83,7 @@ export const courses: Course[] = [
     durationWeeks: 12,
     fee: 1500,
     image: require('../../assets/images/course-walking.jpg'),
+    summary: 'Learn the practical foundations of running a confident, caring pet business.',
     overview:
       'The essentials of starting, marketing and scaling a local pet care business.',
     whatYouWillLearn: [
@@ -97,6 +102,7 @@ export const courses: Course[] = [
     durationWeeks: 6,
     fee: 750,
     image: require('../../assets/images/course-puppy.jpg'),
+    summary: 'Help your puppy settle in with positive routines, early socialisation and care.',
     overview:
       'Establishing basic routines, crate training, and initial socialisation benchmarks for new puppies.',
     whatYouWillLearn: [
@@ -114,6 +120,7 @@ export const courses: Course[] = [
     durationWeeks: 6,
     fee: 750,
     image: require('../../assets/images/course-first-aid.jpg'),
+    summary: 'Learn how to recognise common pet emergencies and respond with confidence.',
     overview:
       'Emergency response protocols and temporary stabilisation methods for common pet injuries.',
     whatYouWillLearn: [
@@ -131,6 +138,7 @@ export const courses: Course[] = [
     durationWeeks: 6,
     fee: 750,
     image: require('../../assets/images/course-walking.jpg'),
+    summary: 'Build safe leash skills and confidence walking dogs in everyday settings.',
     overview:
       'Daily physical training, leash manners, and handling multiple dogs safely in public.',
     whatYouWillLearn: [

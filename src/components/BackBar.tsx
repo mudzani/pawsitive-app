@@ -13,7 +13,7 @@ export default function BackBar({ title }: { title: string }) {
         onPress={() => router.back()}
         style={styles.backButton}
       >
-        <Text style={styles.backIcon}>‹</Text>
+        <Text style={styles.backIcon}>←</Text>
       </Pressable>
       <Text style={styles.title}>{title}</Text>
     </View>
@@ -24,30 +24,25 @@ const styles = StyleSheet.create({
   row: {
     alignItems: 'center',
     flexDirection: 'row',
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
     minHeight: 44,
   },
   backButton: {
-    alignItems: 'center',
-    backgroundColor: colors.white,
-    borderColor: colors.border,
-    borderRadius: 22,
-    borderWidth: 1,
-    height: 40,
+    alignItems: 'flex-start',
     justifyContent: 'center',
     marginRight: spacing.sm,
-    width: 40,
+    minHeight: 44,
+    width: 20,
   },
   backIcon: {
     color: colors.primary,
-    fontSize: 30,
-    lineHeight: 32,
-    marginTop: -4,
+    fontSize: 21,
+    lineHeight: 26,
   },
   title: {
-    color: colors.text,
+    color: colors.primary,
     flex: 1,
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

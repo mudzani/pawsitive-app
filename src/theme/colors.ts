@@ -6,7 +6,8 @@
 export const colors = {
   primary: '#1F6F5C',   // Deep Teal — headers, nav, primary buttons
   background: '#F7EFE3', // Warm Cream — screen backgrounds
-  accent: '#E8A33D',    // Golden Amber — call-to-action highlights
+  surface: '#FFFCF7',
+  accent: '#E8A33D',    // Golden Amber — Call-to-action highlights
   text: '#2B2B2B',      // Charcoal — body text
   white: '#FFFFFF',
   border: '#E0D8C8',
