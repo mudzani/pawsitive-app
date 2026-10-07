@@ -1,25 +1,57 @@
 import { useState } from 'react';
-import { Platform, Share, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Platform, Pressable, Share, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import * as Linking from 'expo-linking';
-import AppButton from '../components/AppButton';
+import { useRouter } from 'expo-router';
+import BackBar from '../components/BackBar';
 import { colors, spacing, typography } from '../theme/colors';
 
 const ACADEMY_EMAIL = 'donald.mudzani@gmail.com';
+const ACADEMY_PHONE = '0836221304';
 
 export default function ContactScreen() {
+  const router = useRouter();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
+  const [consent, setConsent] = useState(false);
   const [feedback, setFeedback] = useState('');
   const [isSharing, setIsSharing] = useState(false);
+
+  async function openAcademyEmail() {
+    try {
+      await Linking.openURL(`mailto:${ACADEMY_EMAIL}`);
+    } catch (error) {
+      setFeedback(
+        error instanceof Error
+          ? `Could not open your email app: ${error.message}. Please email ${ACADEMY_EMAIL} manually.`
+          : `Could not open your email app. Please email ${ACADEMY_EMAIL} manually.`,
+      );
+    }
+  }
+
+  async function callAcademy() {
+    try {
+      await Linking.openURL(`tel:${ACADEMY_PHONE}`);
+    } catch (error) {
+      setFeedback(
+        error instanceof Error
+          ? `Could not open your phone app: ${error.message}. Call ${ACADEMY_PHONE} manually.`
+          : `Could not open your phone app. Call ${ACADEMY_PHONE} manually.`,
+      );
+    }
+  }
 
   async function shareEnquiry() {
     const cleanName = name.trim();
     const cleanEmail = email.trim();
+    const cleanPhone = phone.trim();
+    const cleanSubject = subject.trim();
     const cleanMessage = message.trim();
 
-    if (!cleanName || !cleanEmail || !cleanMessage) {
-      setFeedback('Please enter your name, email address, and message before continuing.');
+    if (!cleanName || !cleanEmail || !cleanSubject || !cleanMessage) {
+      setFeedback('Please complete your name, email address, subject, and message.');
       return;
     }
 
@@ -28,11 +60,24 @@ export default function ContactScreen() {
       return;
     }
 
+    if (!consent) {
+      setFeedback('Please agree to be contacted about your enquiry before continuing.');
+      return;
+    }
+
     setIsSharing(true);
     setFeedback('');
-    const subject = 'Pawsitive Pet Academy enquiry';
-    const enquiry = `Name: ${cleanName}\nEmail: ${cleanEmail}\n\n${cleanMessage}`;
-    const mailtoUrl = `mailto:${ACADEMY_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(enquiry)}`;
+    const emailSubject = `Pawsitive Pet Academy: ${cleanSubject}`;
+    const enquiry = [
+      `Name: ${cleanName}`,
+      `Email: ${cleanEmail}`,
+      cleanPhone ? `Phone: ${cleanPhone}` : '',
+      '',
+      cleanMessage,
+    ]
+      .filter((line) => line !== '')
+      .join('\n');
+    const mailtoUrl = `mailto:${ACADEMY_EMAIL}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(enquiry)}`;
 
     try {
       await Linking.openURL(mailtoUrl);
@@ -44,7 +89,7 @@ export default function ContactScreen() {
         if (Platform.OS === 'web' && typeof navigator !== 'undefined') {
           if (navigator.share) {
             await navigator.share({
-              title: subject,
+              title: emailSubject,
               text: `To: ${ACADEMY_EMAIL}\n\n${enquiry}`,
             });
             setFeedback(
@@ -52,7 +97,7 @@ export default function ContactScreen() {
             );
           } else if (navigator.clipboard?.writeText) {
             await navigator.clipboard.writeText(
-              `To: ${ACADEMY_EMAIL}\nSubject: ${subject}\n\n${enquiry}`,
+              `To: ${ACADEMY_EMAIL}\nSubject: ${emailSubject}\n\n${enquiry}`,
             );
             setFeedback(
               `Your enquiry was copied with the academy email address. Paste it into your email app and send it to ${ACADEMY_EMAIL}.`,
@@ -64,7 +109,7 @@ export default function ContactScreen() {
           }
         } else {
           const result = await Share.share({
-            title: subject,
+            title: emailSubject,
             message: `To: ${ACADEMY_EMAIL}\n\n${enquiry}`,
           });
           if (result.action === Share.dismissedAction) {
@@ -94,36 +139,59 @@ export default function ContactScreen() {
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
-      <Text style={styles.eyebrow}>GET IN TOUCH</Text>
-      <Text style={styles.heading}>Let&apos;s talk about your next step</Text>
+      <BackBar title="Contact Us" />
+
+      <Text style={styles.eyebrow}>WE’RE HERE TO HELP</Text>
+      <Text style={styles.heading}>Let’s talk pets.</Text>
       <Text style={styles.intro}>
-        Have a question about a course? Send an enquiry and your email app will open a draft for you
-        to review.
+        A course question or a new beginning? Tell us how we can help.
       </Text>
 
-      <View style={styles.emailCard}>
-        <View style={styles.emailIcon}>
-          <Text style={styles.emailIconText}>@</Text>
-        </View>
-        <View style={styles.emailCopy}>
-          <Text style={styles.emailLabel}>EMAIL THE ACADEMY</Text>
-          <Text selectable style={styles.emailAddress}>
-            {ACADEMY_EMAIL}
-          </Text>
-        </View>
+      <View style={styles.notice}>
+        <Text style={styles.noticeIcon}>ⓘ</Text>
+        <Text style={styles.noticeText}>
+          Have a question about a course or enrolment? We’re here to help.
+        </Text>
       </View>
+
+      <View style={styles.contactCards}>
+        <ContactCard
+          icon="⌕"
+          label="Call us"
+          value={ACADEMY_PHONE}
+          onPress={callAcademy}
+        />
+        <ContactCard
+          icon="✉"
+          label="Email us"
+          value={ACADEMY_EMAIL}
+          onPress={openAcademyEmail}
+        />
+        <ContactCard icon="◷" label="Office hours" value="Mon–Fri · 09:00–17:00" />
+      </View>
+
+      <Pressable
+        accessibilityRole="button"
+        onPress={openAcademyEmail}
+        style={({ pressed }) => [styles.emailButton, pressed && styles.pressed]}
+      >
+        <Text style={styles.emailButtonText}>Email the academy</Text>
+        <Text style={styles.emailButtonArrow}>→</Text>
+      </Pressable>
 
       <View style={styles.formCard}>
         <Text style={styles.formHeading}>Send us a message</Text>
-        <Text style={styles.formIntro}>Complete the fields below to prepare your enquiry.</Text>
+        <Text style={styles.formIntro}>
+          Tell us what you’d like to learn. We’re here to help you find your next step.
+        </Text>
 
-        <Text style={styles.label}>Your name</Text>
+        <Text style={styles.label}>Full name</Text>
         <TextInput
-          accessibilityLabel="Your name"
+          accessibilityLabel="Full name"
           autoCapitalize="words"
           autoComplete="name"
           onChangeText={setName}
-          placeholder="Name"
+          placeholder="Your name"
           placeholderTextColor={colors.muted}
           returnKeyType="next"
           style={styles.input}
@@ -145,34 +213,124 @@ export default function ContactScreen() {
           value={email}
         />
 
-        <Text style={styles.label}>How can we help?</Text>
+        <Text style={styles.label}>Phone (optional)</Text>
+        <TextInput
+          accessibilityLabel="Phone number (optional)"
+          autoComplete="tel"
+          keyboardType="phone-pad"
+          onChangeText={setPhone}
+          placeholder="Your phone number"
+          placeholderTextColor={colors.muted}
+          returnKeyType="next"
+          style={styles.input}
+          value={phone}
+        />
+
+        <Text style={styles.label}>Subject</Text>
+        <TextInput
+          accessibilityLabel="Subject"
+          onChangeText={setSubject}
+          placeholder="What can we help with?"
+          placeholderTextColor={colors.muted}
+          returnKeyType="next"
+          style={styles.input}
+          value={subject}
+        />
+
+        <Text style={styles.label}>Message</Text>
         <TextInput
           accessibilityLabel="Enquiry message"
           multiline
           onChangeText={setMessage}
-          placeholder="Write your course question here"
+          placeholder="Tell us a little about your enquiry..."
           placeholderTextColor={colors.muted}
           style={[styles.input, styles.messageInput]}
           textAlignVertical="top"
           value={message}
         />
 
+        <Pressable
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: consent }}
+          onPress={() => setConsent((current) => !current)}
+          style={styles.consentRow}
+        >
+          <View style={[styles.checkbox, consent && styles.checkedBox]}>
+            {consent ? <Text style={styles.checkMark}>✓</Text> : null}
+          </View>
+          <Text style={styles.consentText}>I agree to be contacted about my enquiry.</Text>
+        </Pressable>
+
         {feedback ? (
           <Text accessibilityLiveRegion="polite" style={styles.feedback}>
             {feedback}
           </Text>
         ) : null}
-        <AppButton
-          label={isSharing ? 'Opening email...' : 'Prepare email enquiry'}
+
+        <Pressable
+          accessibilityRole="button"
           onPress={shareEnquiry}
-          style={styles.submitButton}
-        />
+          style={({ pressed }) => [styles.submitButton, pressed && styles.pressed]}
+        >
+          <Text style={styles.submitButtonText}>{isSharing ? 'Preparing email...' : 'Send message'}</Text>
+          <Text style={styles.submitButtonArrow}>→</Text>
+        </Pressable>
         <Text style={styles.disclaimer}>
-          This app prepares a draft; it does not send your message automatically.
+          This prepares an email draft for you to review and send; your message is not sent
+          automatically.
         </Text>
       </View>
+
+      <Text style={styles.bottomNote}>
+        Not sure which course is right for you? Explore the collection or send us your question.
+      </Text>
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => router.navigate('/courses')}
+        style={({ pressed }) => [styles.coursesButton, pressed && styles.pressed]}
+      >
+        <Text style={styles.coursesButtonText}>View courses</Text>
+        <Text style={styles.coursesButtonArrow}>→</Text>
+      </Pressable>
     </ScrollView>
   );
+}
+
+function ContactCard({
+  icon,
+  label,
+  value,
+  onPress,
+}: {
+  icon: string;
+  label: string;
+  value: string;
+  onPress?: () => void;
+}) {
+  const content = (
+    <>
+      <Text style={styles.contactIcon}>{icon}</Text>
+      <Text style={styles.contactLabel}>{label}</Text>
+      <Text selectable={label === 'Email us'} style={styles.contactValue}>
+        {value}
+      </Text>
+    </>
+  );
+
+  if (onPress) {
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${label}: ${value}`}
+        onPress={onPress}
+        style={({ pressed }) => [styles.contactCard, pressed && styles.pressed]}
+      >
+        {content}
+      </Pressable>
+    );
+  }
+
+  return <View style={styles.contactCard}>{content}</View>;
 }
 
 const styles = StyleSheet.create({
@@ -188,116 +346,227 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   eyebrow: {
-    color: colors.accent,
-    fontSize: 11,
+    color: colors.primary,
+    fontSize: 10,
     fontWeight: '800',
-    letterSpacing: 1.6,
-    marginBottom: spacing.xs,
+    marginBottom: spacing.sm,
   },
   heading: {
-    ...typography.heading,
+    color: colors.text,
     fontSize: 27,
+    fontWeight: '800',
+    letterSpacing: -0.5,
     lineHeight: 34,
   },
   intro: {
     ...typography.body,
     color: colors.muted,
+    fontSize: 14,
     lineHeight: 22,
     marginBottom: spacing.md,
     marginTop: spacing.xs,
   },
-  emailCard: {
-    alignItems: 'center',
-    backgroundColor: '#E8F1ED',
-    borderRadius: 14,
+  notice: {
+    alignItems: 'flex-start',
+    backgroundColor: '#FCE9C7',
+    borderRadius: 12,
     flexDirection: 'row',
+    gap: spacing.sm,
     marginBottom: spacing.md,
     padding: spacing.md,
   },
-  emailIcon: {
-    alignItems: 'center',
-    backgroundColor: colors.primary,
-    borderRadius: 22,
-    height: 44,
-    justifyContent: 'center',
-    marginRight: spacing.md,
-    width: 44,
-  },
-  emailIconText: {
-    color: colors.white,
-    fontSize: 20,
-    fontWeight: '800',
-  },
-  emailCopy: {
-    flex: 1,
-  },
-  emailLabel: {
+  noticeIcon: {
     color: colors.primary,
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 1.1,
+    fontSize: 16,
+    fontWeight: '700',
+    lineHeight: 20,
+  },
+  noticeText: {
+    color: colors.text,
+    flex: 1,
+    fontSize: 11,
+    lineHeight: 16,
+  },
+  contactCards: {
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  contactCard: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 17,
+    borderWidth: 1,
+    minHeight: 100,
+    padding: spacing.md,
+  },
+  contactIcon: {
+    color: colors.primary,
+    fontSize: 19,
+    fontWeight: '600',
     marginBottom: spacing.xs,
   },
-  emailAddress: {
-    color: colors.text,
-    fontSize: 14,
+  contactLabel: {
+    color: colors.muted,
+    fontSize: 10,
     fontWeight: '600',
+    marginBottom: spacing.sm,
+  },
+  contactValue: {
+    color: colors.text,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  emailButton: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderColor: colors.primary,
+    borderRadius: 10,
+    borderWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: spacing.lg,
+    minHeight: 48,
+  },
+  emailButtonText: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  emailButtonArrow: {
+    color: colors.primary,
+    fontSize: 17,
+    marginLeft: spacing.sm,
   },
   formCard: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
     borderColor: colors.border,
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 1,
+    marginBottom: spacing.lg,
     padding: spacing.md,
   },
   formHeading: {
-    color: colors.primary,
+    color: colors.text,
     fontSize: 20,
     fontWeight: '800',
+    letterSpacing: -0.2,
   },
   formIntro: {
-    ...typography.body,
     color: colors.muted,
-    lineHeight: 20,
+    fontSize: 11,
+    lineHeight: 18,
     marginBottom: spacing.md,
-    marginTop: spacing.xs,
+    marginTop: spacing.md,
   },
   label: {
-    ...typography.subheading,
-    fontSize: 14,
+    color: colors.text,
+    fontSize: 11,
+    fontWeight: '600',
     marginBottom: spacing.xs,
   },
   input: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
     borderColor: colors.border,
-    borderRadius: 9,
+    borderRadius: 10,
     borderWidth: 1,
     color: colors.text,
-    fontSize: 16,
+    fontSize: 13,
     marginBottom: spacing.md,
     minHeight: 48,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
   messageInput: {
-    minHeight: 120,
+    minHeight: 104,
     paddingTop: spacing.md,
+  },
+  consentRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+    minHeight: 32,
+  },
+  checkbox: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 5,
+    borderWidth: 1,
+    height: 20,
+    justifyContent: 'center',
+    width: 20,
+  },
+  checkedBox: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  checkMark: {
+    color: colors.white,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  consentText: {
+    color: colors.muted,
+    flex: 1,
+    fontSize: 10,
+    lineHeight: 15,
   },
   feedback: {
     color: colors.primary,
-    fontSize: 13,
-    lineHeight: 20,
+    fontSize: 12,
+    lineHeight: 18,
     marginBottom: spacing.md,
   },
   submitButton: {
-    backgroundColor: colors.accent,
-    marginTop: spacing.xs,
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: 11,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    minHeight: 48,
+  },
+  submitButtonText: {
+    color: colors.white,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  submitButtonArrow: {
+    color: colors.white,
+    fontSize: 17,
+    marginLeft: spacing.sm,
   },
   disclaimer: {
     color: colors.muted,
-    fontSize: 11,
-    lineHeight: 17,
+    fontSize: 10,
+    lineHeight: 16,
     marginTop: spacing.sm,
-    textAlign: 'center',
+  },
+  bottomNote: {
+    color: colors.muted,
+    fontSize: 11,
+    lineHeight: 18,
+    marginBottom: spacing.md,
+  },
+  coursesButton: {
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: 11,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    minHeight: 48,
+  },
+  coursesButtonText: {
+    color: colors.white,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  coursesButtonArrow: {
+    color: colors.white,
+    fontSize: 17,
+    marginLeft: spacing.sm,
+  },
+  pressed: {
+    opacity: 0.8,
   },
 });
