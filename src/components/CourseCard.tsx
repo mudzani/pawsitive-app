@@ -8,8 +8,8 @@ type Props = {
   onPress: () => void;
 };
 
-// Used on the Home screen (popular courses) and the Courses Overview
-// screen (full list), so both screens render courses identically.
+// This card is used on more than one screen.
+// It keeps the course look the same on the home page and the full course list.
 export default function CourseCard({ course, onPress }: Props) {
   return (
     <Pressable

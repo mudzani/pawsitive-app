@@ -10,6 +10,9 @@ const heroImage = require('../../assets/images/home-hero.png');
 
 export default function HomeScreen() {
   const router = useRouter();
+
+  // We only show the first 4 courses on the home screen.
+  // This keeps the page clean and helps users pick a course quickly.
   const startingCourses = courses.slice(0, 4);
 
   return (

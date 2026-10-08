@@ -9,6 +9,8 @@ type Props = {
   style?: ViewStyle;
 };
 
+// One button style for the whole app.
+// This keeps the design same everywhere and makes it easy to change later.
 // variant="primary" = solid teal button (main action on a screen)
 // variant="secondary" = outlined button (secondary action, e.g. "Back to Courses")
 export default function AppButton({ label, onPress, variant = 'primary', style }: Props) {

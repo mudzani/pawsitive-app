@@ -1,9 +1,8 @@
 import type { ImageSourcePropType } from 'react-native';
 
-// Real Pawsitive Pet Academy course data, confirmed against the WIL POE.
-// Both the Courses Overview screen and the Calculate Fees screen read
-// from this same list, so the app never shows two different prices
-// for the same course.
+// This is the main list for all courses in the app.
+// The screens read from this same data, so the prices and details stay the same everywhere.
+// That helps avoid mistakes when students compare courses on different pages.
 
 export type Course = {
   id: string;

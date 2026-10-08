@@ -9,6 +9,9 @@ import { colors, spacing, typography } from '../theme/colors';
 export default function CourseDetailScreen() {
   const { courseId } = useLocalSearchParams<{ courseId: string }>();
   const router = useRouter();
+
+  // Find the course using the id from the page link.
+  // If the id is wrong, we show a safe "course not found" message.
   const course = courses.find((item) => item.id === courseId);
 
   if (!course) {
