@@ -82,7 +82,7 @@ export const courses: Course[] = [
     type: 'Professional Development Programme',
     durationWeeks: 12,
     fee: 1500,
-    image: require('../../assets/images/course-walking.jpg'),
+    image: require('../../assets/images/course-business-management.png'),
     summary: 'Learn the practical foundations of running a confident, caring pet business.',
     overview:
       'The essentials of starting, marketing and scaling a local pet care business.',

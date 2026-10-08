@@ -6,7 +6,7 @@ import CourseCard from '../components/CourseCard';
 import { courses } from '../data/courses';
 import { colors, spacing, typography } from '../theme/colors';
 
-const heroImage = require('../../assets/images/home-hero.jpg');
+const heroImage = require('../../assets/images/home-hero.png');
 
 export default function HomeScreen() {
   const router = useRouter();
