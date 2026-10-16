@@ -1,7 +1,9 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import * as Linking from 'expo-linking';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import BackBar from '../components/BackBar';
+import { ACADEMY_EMAIL } from '../data/contact';
 import { courses, getDiscountRate, VAT_RATE } from '../data/courses';
 import { colors, spacing, typography } from '../theme/colors';
 
@@ -30,13 +32,17 @@ export default function CalculateFeesScreen() {
 }
 
 function FeeCalculator({ initialCourseId }: { initialCourseId?: string }) {
-  const router = useRouter();
   const initialSelection =
     initialCourseId && courses.some((course) => course.id === initialCourseId)
       ? [initialCourseId]
       : [];
   const [selectedCourseIds, setSelectedCourseIds] = useState<string[]>(initialSelection);
   const [calculatedCourseIds, setCalculatedCourseIds] = useState<string[]>(initialSelection);
+  const [customerName, setCustomerName] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [enrolmentFeedback, setEnrolmentFeedback] = useState('');
+  const [isOpeningEmail, setIsOpeningEmail] = useState(false);
 
   const selectedCourses = useMemo(
     () => courses.filter((course) => selectedCourseIds.includes(course.id)),
@@ -52,6 +58,9 @@ function FeeCalculator({ initialCourseId }: { initialCourseId?: string }) {
   const discountedSubtotal = roundMoney(subtotal - discount);
   const vat = roundMoney(discountedSubtotal * VAT_RATE);
   const total = roundMoney(discountedSubtotal + vat);
+  const quoteIsCurrent =
+    selectedCourseIds.length === calculatedCourseIds.length &&
+    selectedCourseIds.every((courseId) => calculatedCourseIds.includes(courseId));
   const professionalCourses = calculatedCourses.filter(
     (course) => course.type === 'Professional Development Programme',
   );
@@ -69,10 +78,68 @@ function FeeCalculator({ initialCourseId }: { initialCourseId?: string }) {
     setCalculatedCourseIds([]);
   }
 
+  async function continueToEnrol() {
+    const cleanName = customerName.trim();
+    const cleanEmail = customerEmail.trim();
+    const cleanPhone = customerPhone.trim();
+
+    if (calculatedCourses.length === 0) {
+      setEnrolmentFeedback('Choose at least one course and calculate your fees before continuing.');
+      return;
+    }
+
+    if (!quoteIsCurrent) {
+      setEnrolmentFeedback('Your course selection has changed. Tap Calculate to update your quote.');
+      return;
+    }
+
+    if (!cleanName || !cleanEmail) {
+      setEnrolmentFeedback('Please enter your name and email address before continuing.');
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      setEnrolmentFeedback('Enter a valid email address so the academy can reply.');
+      return;
+    }
+
+    setIsOpeningEmail(true);
+    setEnrolmentFeedback('');
+    const emailSubject = `Pawsitive Pet Academy enrolment enquiry: ${cleanName}`;
+    const emailBody = [
+      `Name: ${cleanName}`,
+      `Email: ${cleanEmail}`,
+      ...(cleanPhone ? [`Phone: ${cleanPhone}`] : []),
+      '',
+      'Courses:',
+      ...calculatedCourses.map((course) => `- ${course.name} (${formatCourseFee(course.fee)})`),
+      '',
+      `Total including VAT: ${formatMoney(total)}`,
+    ]
+      .join('\n');
+    const mailtoUrl = `mailto:${ACADEMY_EMAIL}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+
+    try {
+      await Linking.openURL(mailtoUrl);
+      setEnrolmentFeedback(
+        `Your email app should open a draft addressed to ${ACADEMY_EMAIL}. Review it and press Send; this app does not send it automatically.`,
+      );
+    } catch (error) {
+      setEnrolmentFeedback(
+        error instanceof Error
+          ? `Could not open your email app: ${error.message}. Please email ${ACADEMY_EMAIL} manually; nothing was sent.`
+          : `Could not open your email app. Please email ${ACADEMY_EMAIL} manually; nothing was sent.`,
+      );
+    } finally {
+      setIsOpeningEmail(false);
+    }
+  }
+
   return (
     <ScrollView
       style={styles.screen}
       contentContainerStyle={styles.content}
+      keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
       <BackBar title="Calculate Fees" />
@@ -147,6 +214,60 @@ function FeeCalculator({ initialCourseId }: { initialCourseId?: string }) {
         </View>
       </View>
 
+      <View style={styles.enrolmentForm}>
+        <Text style={styles.formHeading}>Your details</Text>
+        <Text style={styles.formIntro}>
+          Add your contact details so we can prepare your enrolment enquiry.
+        </Text>
+
+        <Text style={styles.inputLabel}>Full name</Text>
+        <TextInput
+          accessibilityLabel="Full name"
+          autoCapitalize="words"
+          autoComplete="name"
+          onChangeText={setCustomerName}
+          placeholder="Your name"
+          placeholderTextColor={colors.muted}
+          returnKeyType="next"
+          style={styles.input}
+          value={customerName}
+        />
+
+        <Text style={styles.inputLabel}>Email address</Text>
+        <TextInput
+          accessibilityLabel="Email address"
+          autoCapitalize="none"
+          autoComplete="email"
+          keyboardType="email-address"
+          onChangeText={setCustomerEmail}
+          placeholder="you@example.com"
+          placeholderTextColor={colors.muted}
+          returnKeyType="next"
+          style={styles.input}
+          textContentType="emailAddress"
+          value={customerEmail}
+        />
+
+        <Text style={styles.inputLabel}>Phone (optional)</Text>
+        <TextInput
+          accessibilityLabel="Phone number (optional)"
+          autoComplete="tel"
+          keyboardType="phone-pad"
+          onChangeText={setCustomerPhone}
+          placeholder="Your phone number"
+          placeholderTextColor={colors.muted}
+          returnKeyType="done"
+          style={styles.input}
+          value={customerPhone}
+        />
+
+        {enrolmentFeedback ? (
+          <Text accessibilityLiveRegion="polite" style={styles.formFeedback}>
+            {enrolmentFeedback}
+          </Text>
+        ) : null}
+      </View>
+
       <View style={styles.summary}>
         <Text style={styles.summaryEyebrow}>YOUR LEARNING PLAN</Text>
         <View style={styles.summaryHeader}>
@@ -218,16 +339,20 @@ function FeeCalculator({ initialCourseId }: { initialCourseId?: string }) {
         </Pressable>
         <Pressable
           accessibilityRole="button"
-          accessibilityState={{ disabled: calculatedCourses.length === 0 }}
-          disabled={calculatedCourses.length === 0}
-          onPress={() => router.navigate('/contact')}
+          accessibilityState={{
+            disabled: calculatedCourses.length === 0 || isOpeningEmail,
+          }}
+          disabled={calculatedCourses.length === 0 || isOpeningEmail}
+          onPress={continueToEnrol}
           style={({ pressed }) => [
             styles.enrolButton,
-            calculatedCourses.length === 0 && styles.disabledButton,
+            (calculatedCourses.length === 0 || isOpeningEmail) && styles.disabledButton,
             pressed && calculatedCourses.length > 0 && styles.pressed,
           ]}
         >
-          <Text style={styles.enrolButtonText}>Continue to enrol</Text>
+          <Text style={styles.enrolButtonText}>
+            {isOpeningEmail ? 'Opening email…' : 'Continue to enrol'}
+          </Text>
           <Text style={styles.enrolButtonArrow}>→</Text>
         </Pressable>
       </View>
@@ -418,6 +543,50 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontSize: 10,
     fontWeight: '700',
+  },
+  enrolmentForm: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 18,
+    borderWidth: 1,
+    marginTop: spacing.lg,
+    padding: spacing.md,
+  },
+  formHeading: {
+    color: colors.text,
+    fontSize: 20,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
+  formIntro: {
+    color: colors.muted,
+    fontSize: 11,
+    lineHeight: 18,
+    marginBottom: spacing.md,
+    marginTop: spacing.sm,
+  },
+  inputLabel: {
+    color: colors.text,
+    fontSize: 11,
+    fontWeight: '600',
+    marginBottom: spacing.xs,
+  },
+  input: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 10,
+    borderWidth: 1,
+    color: colors.text,
+    fontSize: 12,
+    marginBottom: spacing.md,
+    minHeight: 46,
+    paddingHorizontal: spacing.md,
+  },
+  formFeedback: {
+    color: colors.primary,
+    fontSize: 11,
+    lineHeight: 17,
+    marginBottom: spacing.sm,
   },
   summary: {
     backgroundColor: colors.surface,

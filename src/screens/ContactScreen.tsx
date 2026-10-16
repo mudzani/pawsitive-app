@@ -3,10 +3,8 @@ import { Platform, Pressable, Share, ScrollView, StyleSheet, Text, TextInput, Vi
 import * as Linking from 'expo-linking';
 import { useRouter } from 'expo-router';
 import BackBar from '../components/BackBar';
+import { ACADEMY_EMAIL, ACADEMY_PHONE } from '../data/contact';
 import { colors, spacing, typography } from '../theme/colors';
-
-const ACADEMY_EMAIL = 'donald.mudzani@gmail.com';
-const ACADEMY_PHONE = '0836221304';
 
 export default function ContactScreen() {
   const router = useRouter();
